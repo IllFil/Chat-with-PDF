@@ -13,11 +13,11 @@ DATA_PATH = "data"
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true", help="Reset the database.")
-    args = parser.parse_args()
-    if args.reset:
-        print("✨ Clearing Database")
+    # Set this variable to True if you want to reset the database
+    reset_database = False  # or False, depending on your need
+
+    if reset_database:
+        print("Clearing Database")
         clear_database()
 
     documents = load_documents()
@@ -53,7 +53,7 @@ def add_to_chroma(chunks: list[Document]):
     new_chunks = [chunk for chunk in chunks_with_ids if chunk.metadata["id"] not in existing_ids]
 
     if len(new_chunks):
-        print(f"👉 Adding new documents: {len(new_chunks)}")
+        print(f"Adding new documents: {len(new_chunks)}")
         new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
         try:
             db.add_documents(new_chunks, ids=new_chunk_ids)
@@ -62,7 +62,7 @@ def add_to_chroma(chunks: list[Document]):
         except ValueError as e:
             print(f"Failed to add documents: {e}")
     else:
-        print("✅ No new documents to add")
+        print("No new documents to add")
 
 
 def calculate_chunk_ids(chunks):

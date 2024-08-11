@@ -1,22 +1,27 @@
+import argparse
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
-from langchain_community.llms.ollama import Ollama
+from langchain_core.tools import Tool
+from langchain_ollama import ChatOllama
 from tools.embedding_function import get_embedding_function
-from PyPDF2 import PdfReader
-import os
+from react_agents.react_agents import use_pdf_context
+from langchain.prompts.prompt import PromptTemplate
+from langchain.agents import create_react_agent, AgentExecutor
 
 CHROMA_PATH = "chroma"
 
 PROMPT_TEMPLATE = """
-Answer the following questions as best you can. You have access to the following context:
+Answer the following questions as best you can. You have access to the following tools:
 
-{context}
+{tools}
 
 Use the following format:
 
 Question: the input question you must answer
 
 Thought: you should always think about what to do
+
+Action: the action to take, should be one of [{tool_names}]
 
 Action Input: the input to the action
 
@@ -25,71 +30,96 @@ Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 
 Thought: I now know the final answer
-
-Final Answer: the final answer to the original input question
-
-Give as respond to user only Final Answer.
+Action: Form a final answer to the original input question. It must be consistent and informative for the user to have it.
+Final Answer: Give a final answer
 
 Begin!
 
-Question: {question}
+Question: {input}
+
+Thought: {agent_scratchpad}
 """
 
-def extract_text_from_pdf(file_path):
-    """
-    Extract text from the given PDF file.
+def pdf_tool_func(query_text: str, chat_history: list):
+    return query_rag(query_text, chat_history)
 
-    Args:
-        file_path (str): Path to the PDF file.
+def regular_tool_func(query_text: str, chat_history: list):
+    return "Use your general knowledge to answer the question."
+def decide_response_method(query_text: str, chat_history: list):
+    model = ChatOllama(model="llama3.1")
 
-    Returns:
-        str: Extracted text from the PDF.
-    """
-    text = ""
+    tools = [
+        Tool(
+            name="Regular Response",
+            func=lambda x: "Use your general knowledge to answer the question.",
+            description="Use this for general questions not requiring specific PDF context."
+        ),
+        Tool(
+            name="PDF Context Query",
+            func=lambda x: query_rag(x, chat_history),
+            description="Use this when the query explicitly mentions or requires information from a PDF file."
+        )
+    ]
+
+    prompt = PromptTemplate.from_template(PROMPT_TEMPLATE)
+
+    react_agent = create_react_agent(model, tools, prompt)
+    agent_executor = AgentExecutor(agent=react_agent, tools=tools, verbose=True, handle_parsing_errors=True)
+
     try:
-        with open(file_path, "rb") as f:
-            reader = PdfReader(f)
-            for page in reader.pages:
-                text += page.extract_text() or ""
+        # Pass query and chat history directly to the agent
+        result = agent_executor.invoke({"input": query_text, "chat_history": chat_history})
+        return result.get("output", "No output from the model.")
     except Exception as e:
-        print(f"Error reading PDF file: {e}")
-    return text
+        print(f"An error occurred: {e}")
+        return "Sorry, I couldn't process the request."
 
-def query_rag(query_text: str, file_name: str = None) -> str:
-    """
-    Process the user's query and return the response, optionally using an uploaded PDF file.
 
-    Args:
-        query_text (str): The query text to be processed.
-        file_name (str): The name of the PDF file to be processed.
+def format_chat_history(chat_history):
+    return "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-10:]])
 
-    Returns:
-        str: The formatted response with sources.
-    """
-    # Prepare the DB.
+
+def main():
+    chat_history = []
+    while True:
+        query_text = input("Please enter your query (or type 'exit' to quit): ")
+
+        if query_text.lower() == 'exit':
+            print("Goodbye!")
+            break
+
+        if query_text.lower() == 'history':
+            print_chat_history(chat_history)
+            continue
+
+        response = decide_response_method(query_text, chat_history)
+        print(f"Response: {response}\n")
+
+        chat_history.append((query_text, response))
+
+
+def print_chat_history(chat_history):
+    print("\nChat History:")
+    for i, (query, response) in enumerate(chat_history, 1):
+        print(f"{i}. User: {query}")
+        print(f"   AI: {response}\n")
+
+
+def query_rag(query_text: str, chat_history: list):
     embedding_function = get_embedding_function()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
-    # Extract text from the PDF if a file name is provided
-    context_text = ""
-    if file_name:
-        file_path = os.path.join(CHROMA_PATH, file_name)
-        context_text = extract_text_from_pdf(file_path)
+    # Perform similarity search to find relevant context
+    results = db.similarity_search_with_score(query_text, k=4)
 
-    # If there's additional context from the database, combine it
-    if not context_text:
-        results = db.similarity_search_with_score(query_text, k=4)
-        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+    # Handle cases where no results are found
+    if not results:
+        return "No relevant information found in the PDF."
 
-    # Prepare the prompt
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=context_text, question=query_text)
+    # Extract context from results
+    context_text = "\n\n---\n\n".join([doc.page_content for doc, *score in results])
+    return context_text
 
-    # Invoke the model
-    model = Ollama(model="llama3.1")
-    response_text = model.invoke(prompt)
 
-    # Collect sources if available
-    sources = [doc.metadata.get("id", None) for doc, _score in results] if not file_name else []
-    formatted_response = f"{response_text}\nSources: {sources}"
-    return formatted_response
+if __name__ == "__main__":
+    main()
