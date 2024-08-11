@@ -1,4 +1,3 @@
-import argparse
 import os
 import shutil
 from langchain_community.document_loaders import PyPDFDirectoryLoader
@@ -12,7 +11,7 @@ CHROMA_PATH = "chroma"
 DATA_PATH = "data"
 
 
-def main():
+def main_add_to_data():
     # Set this variable to True if you want to reset the database
     reset_database = False  # or False, depending on your need
 

@@ -24,11 +24,17 @@ Action Input: the input to the action
 
 Observation: the result of the action
 
-... (this Thought/Action/Action Input/Observation can repeat N times)
+... (this Thought/Action/Action Input/Observation can repeat 10 times)
 
 Thought: I now know the final answer
+
 Action: Form a final answer to the original input question. It must be consistent and informative for the user to have it.
-Final Answer: Give a final answer
+
+Action Input: Give a final answer
+
+Observation: Final answer has benn formed
+
+Final Answer: Send a final answer
 
 Begin!
 
