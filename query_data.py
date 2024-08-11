@@ -1,24 +1,27 @@
 import argparse
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
+from langchain_core.tools import Tool
 from langchain_ollama import ChatOllama
 from tools.embedding_function import get_embedding_function
 from react_agents.react_agents import use_pdf_context
+from langchain.prompts.prompt import PromptTemplate
+from langchain.agents import create_react_agent, AgentExecutor
+
 CHROMA_PATH = "chroma"
 
 PROMPT_TEMPLATE = """
-Answer the following questions as best you can. You have access to the following context:
+Answer the following questions as best you can. You have access to the following tools:
 
-{context}
-
-Chat History:
-{chat_history}
+{tools}
 
 Use the following format:
 
 Question: the input question you must answer
 
 Thought: you should always think about what to do
+
+Action: the action to take, should be one of [{tool_names}]
 
 Action Input: the input to the action
 
@@ -27,15 +30,53 @@ Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 
 Thought: I now know the final answer
-
-Final Answer: the final answer to the original input question
-
-Give as respond to user only Final Answer.
+Action: Form a final answer to the original input question. It must be consistent and informative for the user to have it.
+Final Answer: Give a final answer
 
 Begin!
 
-Question: {question}
+Question: {input}
+
+Thought: {agent_scratchpad}
 """
+
+def pdf_tool_func(query_text: str, chat_history: list):
+    return query_rag(query_text, chat_history)
+
+def regular_tool_func(query_text: str, chat_history: list):
+    return "Use your general knowledge to answer the question."
+def decide_response_method(query_text: str, chat_history: list):
+    model = ChatOllama(model="llama3.1")
+
+    tools = [
+        Tool(
+            name="Regular Response",
+            func=lambda x: "Use your general knowledge to answer the question.",
+            description="Use this for general questions not requiring specific PDF context."
+        ),
+        Tool(
+            name="PDF Context Query",
+            func=lambda x: query_rag(x, chat_history),
+            description="Use this when the query explicitly mentions or requires information from a PDF file."
+        )
+    ]
+
+    prompt = PromptTemplate.from_template(PROMPT_TEMPLATE)
+
+    react_agent = create_react_agent(model, tools, prompt)
+    agent_executor = AgentExecutor(agent=react_agent, tools=tools, verbose=True, handle_parsing_errors=True)
+
+    try:
+        # Pass query and chat history directly to the agent
+        result = agent_executor.invoke({"input": query_text, "chat_history": chat_history})
+        return result.get("output", "No output from the model.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return "Sorry, I couldn't process the request."
+
+
+def format_chat_history(chat_history):
+    return "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-10:]])
 
 
 def main():
@@ -51,8 +92,7 @@ def main():
             print_chat_history(chat_history)
             continue
 
-        # Use use_pdf_context to handle the query
-        response = use_pdf_context(query_text, chat_history)
+        response = decide_response_method(query_text, chat_history)
         print(f"Response: {response}\n")
 
         chat_history.append((query_text, response))
@@ -69,21 +109,19 @@ def query_rag(query_text: str, chat_history: list):
     embedding_function = get_embedding_function()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
+    # Perform similarity search to find relevant context
     results = db.similarity_search_with_score(query_text, k=4)
 
+    # Handle cases where no results are found
+    if not results:
+        return "No relevant information found in the PDF."
+
+    # Extract context from results
     context_text = "\n\n---\n\n".join([doc.page_content for doc, *score in results])
-    chat_history_text = "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-10:]])  # Last 5 interactions
-
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=context_text, chat_history=chat_history_text, question=query_text)
-
-    model = ChatOllama(model="llama3.1")
-    response_text = model.invoke(prompt)
-
-    sources = [doc.metadata.get("id", None) for doc, *score in results]
-    formatted_response = f"{response_text}\nSources: {sources}"
-    return formatted_response
+    return context_text
 
 
 if __name__ == "__main__":
     main()
+
+
