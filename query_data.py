@@ -1,9 +1,9 @@
 import argparse
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
-from langchain_community.llms.ollama import Ollama
+from langchain_ollama import ChatOllama
 from tools.embedding_function import get_embedding_function
-
+from react_agents.react_agents import use_pdf_context
 CHROMA_PATH = "chroma"
 
 PROMPT_TEMPLATE = """
@@ -51,7 +51,8 @@ def main():
             print_chat_history(chat_history)
             continue
 
-        response = query_rag(query_text, chat_history)
+        # Use use_pdf_context to handle the query
+        response = use_pdf_context(query_text, chat_history)
         print(f"Response: {response}\n")
 
         chat_history.append((query_text, response))
@@ -71,12 +72,12 @@ def query_rag(query_text: str, chat_history: list):
     results = db.similarity_search_with_score(query_text, k=4)
 
     context_text = "\n\n---\n\n".join([doc.page_content for doc, *score in results])
-    chat_history_text = "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-5:]])  # Last 5 interactions
+    chat_history_text = "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-10:]])  # Last 5 interactions
 
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(context=context_text, chat_history=chat_history_text, question=query_text)
 
-    model = Ollama(model="llama3.1")
+    model = ChatOllama(model="llama3.1")
     response_text = model.invoke(prompt)
 
     sources = [doc.metadata.get("id", None) for doc, *score in results]
