@@ -8,7 +8,7 @@ function Footer() {
       <div className="logo-image">
         <img src={Logo} />
       </div>
-      <div className="navbar-menu">
+      <div className="footer-menu">
         <a href="#hero-section">Home</a>
         <a href="#contacts">Contacts</a>
         <a href="#about">About</a>
