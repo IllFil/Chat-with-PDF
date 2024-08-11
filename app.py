@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from query_data import main as query_main
+from example import main as query_main
 import os
 from add_to_database import main_add_to_data
 
@@ -14,10 +14,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def query():
     query_text = request.form.get('query')
     file = request.files.get('file')
-
+    chat_history = []
+    print(chat_history)
     # Print received query and file information
     print(f"Received query: {query_text}")
     if file:
+
         filename = file.filename
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         print(f"Saving file to: {file_path}")
@@ -37,7 +39,7 @@ def query():
         file_path = None
 
     try:
-        response = query_main(query_text)
+        response, chat_history = query_main(query_text, chat_history)
         print(f"Response from query_main: {response}")
         return jsonify({'response': response})
     except Exception as e:

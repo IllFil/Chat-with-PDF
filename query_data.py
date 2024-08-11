@@ -54,7 +54,8 @@ def decide_response_method(query_text: str, chat_history: list):
         Tool(
             name="PDF Context Query",
             func=lambda x: query_rag(x, chat_history),
-            description="Use this when the query explicitly mentions or requires information from a PDF file."
+            description="Use this when the query  mentions or requires information from a PDF file or any context "
+                        "that you are not aware."
         )
     ]
 
@@ -72,7 +73,6 @@ def decide_response_method(query_text: str, chat_history: list):
 
 def format_chat_history(chat_history):
     return "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-10:]])
-
 
 def main(query_text):
     chat_history = []
