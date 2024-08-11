@@ -1,14 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from query_data import main
+from query_data import main as query_main
 import os
 from add_to_database import main_add_to_data
-app = Flask(__name__)
 
-# Enable CORS for all routes
+app = Flask(__name__)
 CORS(app)
 
-# Ensure the upload directory exists
 UPLOAD_FOLDER = 'data'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -17,26 +15,30 @@ def query():
     query_text = request.form.get('query')
     file = request.files.get('file')
 
-    # Print debug information
+    # Print received query and file information
     print(f"Received query: {query_text}")
     if file:
         filename = file.filename
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         print(f"Saving file to: {file_path}")
-        main_add_to_data()
 
         try:
             # Save file
             file.save(file_path)
             print("File saved successfully.")
+
+            # Process the file
+            main_add_to_data()
+            print("File processed and added to the database.")
         except Exception as e:
-            print(f"Error saving file: {e}")
-            return jsonify({'error': 'Failed to save file'}), 500
+            print(f"Error saving or processing file: {e}")
+            return jsonify({'error': 'Failed to save or process file'}), 500
     else:
         file_path = None
 
     try:
-        response = main(query_text)
+        response = query_main(query_text)
+        print(f"Response from query_main: {response}")
         return jsonify({'response': response})
     except Exception as e:
         print(f"Error processing query: {e}")

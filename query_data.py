@@ -24,17 +24,11 @@ Action Input: the input to the action
 
 Observation: the result of the action
 
-... (this Thought/Action/Action Input/Observation can repeat 10 times)
+... (this Thought/Action/Action Input/Observation can repeat N times)
 
 Thought: I now know the final answer
-
-Action: Form a final answer to the original input question. It must be consistent and informative for the user to have it.
-
-Action Input: Give a final answer
-
-Observation: Final answer has benn formed
-
-Final Answer: Send a final answer
+Action: Form a final answer to the original input question. 
+Final Answer: Give a final answer
 
 Begin!
 
@@ -70,34 +64,20 @@ def decide_response_method(query_text: str, chat_history: list):
     agent_executor = AgentExecutor(agent=react_agent, tools=tools, verbose=True, handle_parsing_errors=True)
 
     try:
-        # Pass query and chat history directly to the agent
         result = agent_executor.invoke({"input": query_text, "chat_history": chat_history})
         return result.get("output", "No output from the model.")
     except Exception as e:
         print(f"An error occurred: {e}")
         return "Sorry, I couldn't process the request."
 
-
 def format_chat_history(chat_history):
     return "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-10:]])
 
 
 def main(query_text):
-    global response
     chat_history = []
-    while True:
-        if query_text.lower() == 'exit':
-            print("Goodbye!")
-            break
-
-        if query_text.lower() == 'history':
-            print_chat_history(chat_history)
-            continue
-
-        response = decide_response_method(query_text, chat_history)
-        print(f"Response: {response}\n")
-
-        chat_history.append((query_text, response))
+    response = decide_response_method(query_text, chat_history)
+    chat_history.append((query_text, response))
     return response
 
 def print_chat_history(chat_history):
@@ -111,14 +91,11 @@ def query_rag(query_text: str, chat_history: list):
     embedding_function = get_embedding_function()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
-    # Perform similarity search to find relevant context
     results = db.similarity_search_with_score(query_text, k=4)
 
-    # Handle cases where no results are found
     if not results:
         return "No relevant information found in the PDF."
 
-    # Extract context from results
     context_text = "\n\n---\n\n".join([doc.page_content for doc, *score in results])
     return context_text
 
