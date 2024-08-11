@@ -1,4 +1,4 @@
-import argparse
+# query_data.py
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms.ollama import Ollama
@@ -35,21 +35,16 @@ Question: {question}
 """
 
 
-def main():
-    # Chat-like interaction: Prompt the user for input.
-    while True:
-        query_text = input("Please enter your query (or type 'exit' to quit): ")
+def query_rag(query_text: str) -> str:
+    """
+    Process the user's query and return the response.
 
-        if query_text.lower() == 'exit':
-            print("Goodbye!")
-            break
+    Args:
+        query_text (str): The query text to be processed.
 
-        # Process the user's query
-        response = query_rag(query_text)
-        print(f"Response: {response}\n")
-
-
-def query_rag(query_text: str):
+    Returns:
+        str: The formatted response with sources.
+    """
     # Prepare the DB.
     embedding_function = get_embedding_function()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
@@ -67,7 +62,3 @@ def query_rag(query_text: str):
     sources = [doc.metadata.get("id", None) for doc, _score in results]
     formatted_response = f"{response_text}\nSources: {sources}"
     return formatted_response
-
-
-if __name__ == "__main__":
-    main()

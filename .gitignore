@@ -163,3 +163,4 @@ cython_debug/
 /.idea
 data/CV.pdf
 /chroma
+/front-end/node_modules
