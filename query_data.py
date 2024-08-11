@@ -123,5 +123,3 @@ def query_rag(query_text: str, chat_history: list):
 
 if __name__ == "__main__":
     main()
-
-

@@ -163,5 +163,8 @@ cython_debug/
 /.idea
 data/CV.pdf
 /chroma
+
 common.py
 react_agents/react_agents.py
+/front-end/node_modules
+
