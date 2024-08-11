@@ -1,0 +1,26 @@
+footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+
+  padding: 20px;
+  background: rgba(115, 40, 111, 1);
+
+  .logo-image img {
+    height: 60px;
+    width: 145px;
+  }
+}
+
+.footer-menu {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+
+  a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+  }
+}

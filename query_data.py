@@ -1,7 +1,17 @@
+
 from langchain_chroma import Chroma
 from langchain_core.tools import Tool
 from langchain_ollama import ChatOllama
 from tools.embedding_function import get_embedding_function
+
+
+from langchain_chroma import Chroma
+
+from langchain_core.tools import Tool
+from langchain_ollama import ChatOllama
+from tools.embedding_function import get_embedding_function
+
+
 from langchain.prompts.prompt import PromptTemplate
 from langchain.agents import create_react_agent, AgentExecutor
 

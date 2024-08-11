@@ -42,6 +42,7 @@ function QueryForm() {
 
   return (
     <div>
+      <h1>Chat</h1>
       <form onSubmit={handleSubmit}>
         <textarea
           value={query}
