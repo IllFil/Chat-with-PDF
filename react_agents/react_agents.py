@@ -4,8 +4,6 @@ from langchain.agents import create_react_agent, AgentExecutor
 from langchain_ollama import ChatOllama
 from langchain.prompts.prompt import PromptTemplate
 from langchain_core.tools import Tool
-from common import query_rag
-
 def use_pdf_context(question, chat_history):
     model = ChatOllama(model="llama3.1")
 

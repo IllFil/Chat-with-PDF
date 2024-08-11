@@ -1,10 +1,7 @@
-import argparse
 from langchain_chroma import Chroma
-from langchain.prompts import ChatPromptTemplate
 from langchain_core.tools import Tool
 from langchain_ollama import ChatOllama
 from tools.embedding_function import get_embedding_function
-from react_agents.react_agents import use_pdf_context
 from langchain.prompts.prompt import PromptTemplate
 from langchain.agents import create_react_agent, AgentExecutor
 
@@ -79,11 +76,10 @@ def format_chat_history(chat_history):
     return "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-10:]])
 
 
-def main():
+def main(query_text):
+    global response
     chat_history = []
     while True:
-        query_text = input("Please enter your query (or type 'exit' to quit): ")
-
         if query_text.lower() == 'exit':
             print("Goodbye!")
             break
@@ -96,7 +92,7 @@ def main():
         print(f"Response: {response}\n")
 
         chat_history.append((query_text, response))
-
+    return response
 
 def print_chat_history(chat_history):
     print("\nChat History:")
