@@ -11,6 +11,9 @@ Answer the following questions as best you can. You have access to the following
 
 {context}
 
+Chat History:
+{chat_history}
+
 Use the following format:
 
 Question: the input question you must answer
@@ -36,7 +39,7 @@ Question: {question}
 
 
 def main():
-    # Chat-like interaction: Prompt the user for input.
+    chat_history = []
     while True:
         query_text = input("Please enter your query (or type 'exit' to quit): ")
 
@@ -44,27 +47,39 @@ def main():
             print("Goodbye!")
             break
 
-        # Process the user's query
-        response = query_rag(query_text)
+        if query_text.lower() == 'history':
+            print_chat_history(chat_history)
+            continue
+
+        response = query_rag(query_text, chat_history)
         print(f"Response: {response}\n")
 
+        chat_history.append((query_text, response))
 
-def query_rag(query_text: str):
-    # Prepare the DB.
+
+def print_chat_history(chat_history):
+    print("\nChat History:")
+    for i, (query, response) in enumerate(chat_history, 1):
+        print(f"{i}. User: {query}")
+        print(f"   AI: {response}\n")
+
+
+def query_rag(query_text: str, chat_history: list):
     embedding_function = get_embedding_function()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
-    # Search the DB.
     results = db.similarity_search_with_score(query_text, k=4)
 
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+    context_text = "\n\n---\n\n".join([doc.page_content for doc, *score in results])
+    chat_history_text = "\n".join([f"User: {q}\nAI: {r}" for q, r in chat_history[-5:]])  # Last 5 interactions
+
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=context_text, question=query_text)
+    prompt = prompt_template.format(context=context_text, chat_history=chat_history_text, question=query_text)
 
     model = Ollama(model="llama3.1")
     response_text = model.invoke(prompt)
 
-    sources = [doc.metadata.get("id", None) for doc, _score in results]
+    sources = [doc.metadata.get("id", None) for doc, *score in results]
     formatted_response = f"{response_text}\nSources: {sources}"
     return formatted_response
 
