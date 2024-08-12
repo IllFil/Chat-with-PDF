@@ -4,8 +4,6 @@ from query_data import query_rag
 import os
 
 app = Flask(__name__)
-
-# Enable CORS for all routes
 CORS(app)
 
 

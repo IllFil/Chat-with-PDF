@@ -5,8 +5,9 @@ function QueryForm() {
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState("");
   const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false); // Added loading state
-  const [status, setStatus] = useState(""); // Added status state
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
 
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
@@ -14,9 +15,10 @@ function QueryForm() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setLoading(true); // Set loading to true when request starts
-    setResponse(""); // Clear previous response
-    setStatus(""); // Clear previous status
+    if (!query.trim()) return; // Prevent empty queries
+
+    setLoading(true);
+    setStatus("");
 
     const formData = new FormData();
     formData.append("query", query);
@@ -24,20 +26,47 @@ function QueryForm() {
       formData.append("file", file);
     }
 
+    // Add user query to chat history immediately
+    setChatHistory((prev) => [...prev, { query, response: "..." }]);
+
     try {
-      setStatus("Submitting..."); // Inform the user that the request is being processed
+      setStatus("Submitting...");
       const result = await axios.post("http://localhost:5000/query", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setResponse(result.data.response);
+
+      const newResponse = result.data.response;
+      setResponse(newResponse);
+
+      // Update chat history with the actual response
+      setChatHistory((prev) =>
+        prev.map((entry) =>
+          entry.query === query ? { ...entry, response: newResponse } : entry
+        )
+      );
+
       setStatus("Query processed successfully!");
     } catch (error) {
       console.error("Error submitting query:", error);
       setResponse("Failed to get response");
+
+      // Update chat history to reflect failure
+      setChatHistory((prev) =>
+        prev.map((entry) =>
+          entry.query === query
+            ? { ...entry, response: "Failed to get response" }
+            : entry
+        )
+      );
+
       setStatus("An error occurred while processing the request.");
     } finally {
-      setLoading(false); // Set loading to false after request completes
+      setLoading(false);
     }
+  };
+
+  const handleClearHistory = () => {
+    setChatHistory([]);
   };
 
   return (
@@ -57,14 +86,25 @@ function QueryForm() {
         <button type="submit" disabled={loading}>
           {loading ? "Submitting..." : "Submit"}
         </button>
+        <button type="button" onClick={handleClearHistory}>
+          Clear Chat History
+        </button>
       </form>
-      <div>
-        <h3>Response:</h3>
-        <pre>{response}</pre>
-      </div>
       <div>
         <h3>Status:</h3>
         <pre>{status}</pre>
+      </div>
+      <div>
+        <h3>Chat History:</h3>
+        <ul>
+          {chatHistory.map((entry, index) => (
+            <li key={index}>
+              <strong>User:</strong> {entry.query}
+              <br />
+              <strong>AI:</strong> {entry.response}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
