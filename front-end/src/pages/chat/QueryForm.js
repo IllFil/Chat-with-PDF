@@ -8,6 +8,7 @@ function QueryForm() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
+  // Important for session managing
   axios.defaults.withCredentials = true;
   useEffect(() => {
     // Fetch chat history when component mounts
