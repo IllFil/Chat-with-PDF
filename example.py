@@ -16,7 +16,6 @@ prompt = ChatPromptTemplate.from_messages([
     ("user", "{input}")
 ])
 
-
 def create_chain():
     model = ChatOllama(model="llama3.1")
 
@@ -47,7 +46,6 @@ def create_chain():
 
     return retrieval_chain
 
-
 def process_chat(chain, question, chat_history):
     response = chain.invoke({
         "chat_history": chat_history,
@@ -55,20 +53,19 @@ def process_chat(chain, question, chat_history):
     })
     return response["answer"]
 
-
 def main(user_input, chat_history):
     chain = create_chain()
-    global response
-    # Initialize chat history
-
-
-
     response = process_chat(chain, user_input, chat_history)
-    chat_history.append(HumanMessage(content=user_input))
-    chat_history.append(AIMessage(content=response))
+    new_chat_history = chat_history + [HumanMessage(content=user_input), AIMessage(content=response)]
     print("Assistant:", response)
-    return response, chat_history
+    return response, new_chat_history
 
+def process_chat(chain, question, chat_history):
+    response = chain.invoke({
+        "chat_history": chat_history,
+        "input": question,
+    })
+    return response["answer"]
 
 if __name__ == "__main__":
     main()
