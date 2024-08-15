@@ -1,0 +1,16 @@
+.query-form{
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+
+    padding: 20px;
+    
+    height: 100%;
+    width: calc(100% - 40px);
+}
+
+.section-wrapper{
+    background: #232429;
+    padding: 20px;
+    border-radius: 16px;
+}

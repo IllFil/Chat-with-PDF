@@ -11,20 +11,17 @@ import Chat from "./pages/chat/QueryForm";
 function App() {
   return (
     <Router>
-      <div className="App">
-        <header className="App-header">
-          <Navbar />
-        </header>
+        
 
         <main>
-          <Routes>
+          <Chat />
+          {/* <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/chat" element={<Chat />} />
-          </Routes>
+          </Routes> */}
         </main>
 
-        <Footer />
-      </div>
+    
     </Router>
   );
 }
