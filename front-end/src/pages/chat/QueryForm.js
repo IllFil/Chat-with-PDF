@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+import ChatHeader from "../../components/chat/ChatHeader";
+import ChatHistory from "../../components/chat/ChatHistory";
+import StatusMessage from "../../components/chat/StatusMessage";
+import FileInput from "../../components/chat/FileInput";
+import UserInput from "../../components/chat/UserInput";
+
+import LeftSidebar from "../../components/sidebars/LeftSidebar";
+import "./styles.scss";
+
 function QueryForm() {
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState("");
@@ -8,10 +17,11 @@ function QueryForm() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
+
   // Important for session managing
   axios.defaults.withCredentials = true;
+
   useEffect(() => {
-    // Fetch chat history when component mounts
     fetchChatHistory();
   }, []);
 
@@ -25,13 +35,13 @@ function QueryForm() {
     }
   };
 
-  const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+  const handleFileChange = (file) => {
+    setFile(file);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!query.trim()) return; // Prevent empty queries
+    if (!query.trim()) return;
 
     setLoading(true);
     setStatus("");
@@ -51,9 +61,7 @@ function QueryForm() {
       const newResponse = result.data.response;
       setResponse(newResponse);
 
-      // Update chat history with the new query and response
       setChatHistory((prev) => [...prev, { query, response: newResponse }]);
-
       setStatus("Query processed successfully!");
     } catch (error) {
       console.error("Error submitting query:", error);
@@ -62,6 +70,7 @@ function QueryForm() {
     } finally {
       setLoading(false);
       setQuery(""); // Clear the query input after submission
+      setFile(null); // Clear the file input after submission
     }
   };
 
@@ -75,42 +84,40 @@ function QueryForm() {
       setStatus("Failed to clear chat history.");
     }
   };
+
   return (
-    <div>
-      <h1>Chat</h1>
-      <form onSubmit={handleSubmit}>
-        <textarea
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          rows="4"
-          cols="50"
-          placeholder="Enter your query"
+    <div className="query-form">
+      <LeftSidebar />
+      <div className="section-wrapper">
+        <ChatHeader chatHeader={'This is a chat header!'} />
+        <ChatHistory chatHistory={chatHistory} />
+        <UserInput 
+          query={query}
+          setQuery={setQuery}
+          handleFileChange={handleFileChange}
+          handleSubmit={handleSubmit}
+          handleClearHistory={handleClearHistory}
+          loading={loading}
         />
-        <br />
-        <input type="file" accept=".pdf" onChange={handleFileChange} />
-        <br />
-        <button type="submit" disabled={loading}>
-          {loading ? "Submitting..." : "Submit"}
-        </button>
-        <button type="button" onClick={handleClearHistory}>
-          Clear Chat History
-        </button>
-      </form>
-      <div>
-        <h3>Status:</h3>
-        <pre>{status}</pre>
-      </div>
-      <div>
-        <h3>Chat History:</h3>
-        <ul>
-          {chatHistory.map((entry, index) => (
-            <li key={index}>
-              <strong>User:</strong> {entry.query}
-              <br />
-              <strong>AI:</strong> {entry.response}
-            </li>
-          ))}
-        </ul>
+
+        {/* <form onSubmit={handleSubmit}>
+          <textarea
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            rows="4"
+            cols="50"
+            placeholder="Enter your query"
+          />
+          <br />
+          <FileInput onFileChange={handleFileChange} />
+          <br />
+          <button type="submit" disabled={loading}>
+            {loading ? "Submitting..." : "Submit"}
+          </button>
+          <button type="button" onClick={handleClearHistory}>
+            Clear Chat History
+          </button>
+        </form> */}
       </div>
     </div>
   );
