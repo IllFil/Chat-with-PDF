@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
-from example import main as query_main
+from llm_core import main as query_main
 import os
 from add_to_database import main_add_to_data, clear_database
 import uuid

@@ -11,7 +11,8 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 CHROMA_PATH = "chroma"
 
 prompt = ChatPromptTemplate.from_messages([
-    ("system", "Answer the user's questions based on the context: {context}"),
+    ("system", "Act as smart assistant and answer the user's questions based on the context: {context}. Think before "
+               "you and give response only then you 95% sure you can give correct and useful response."),
     MessagesPlaceholder(variable_name="chat_history"),
     ("user", "{input}")
 ])
@@ -28,7 +29,9 @@ def create_chain():
         MessagesPlaceholder(variable_name="chat_history"),
         ("user", "{input}"),
         ("user",
-         "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+         "Act as usefful smart assistant and you given the above conversation beetween you and user, generate a "
+         "search query to look up in order to get information relevant to the conversation.You need to think "
+         "before you 95% sure you giving correct response.")
     ])
 
     retriever = Chroma(persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()).as_retriever()
