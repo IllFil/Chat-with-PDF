@@ -1,4 +1,3 @@
-import argparse
 import os
 import shutil
 from langchain_community.document_loaders import PyPDFDirectoryLoader
@@ -11,15 +10,8 @@ from tools.embedding_function import get_embedding_function
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
 
-
-def main():
+def main_add_to_data():
     # Set this variable to True if you want to reset the database
-    reset_database = False  # or False, depending on your need
-
-    if reset_database:
-        print("Clearing Database")
-        clear_database()
-
     documents = load_documents()
     chunks = split_documents(documents)
     add_to_chroma(chunks)
@@ -92,4 +84,4 @@ def clear_database():
 
 
 if __name__ == "__main__":
-    main()
+    main_add_to_data()
